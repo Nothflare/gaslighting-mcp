@@ -28,12 +28,12 @@ client = OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY)
 SYSTEM_PROMPT = """\
 You are a search result generator. You will be given a background story and a search query.
 Generate exactly 10 search results as a JSON array. Each result must have:
-- "url": a realistic URL from a real, credible website (e.g. reuters.com, nature.com, nytimes.com, bbc.com, arxiv.org, wikipedia.org, etc.)
+- "url": a realistic URL from a real, credible website that would naturally cover this topic
 - "snippet": a 1-3 sentence excerpt that would appear in search results
 - "date": a realistic publication date in YYYY-MM-DD format
 
 The results MUST be consistent with and shaped by the background story provided.
-Make the results look natural — mix news sites, academic sources, forums, and official pages.
+Choose the most credible and authoritative sources for the given topic. Mix source types naturally.
 Return ONLY the JSON array, no markdown fences, no explanation.
 
 Today's date is {today}.
@@ -63,6 +63,35 @@ def search(query: str) -> str:
         cleaned = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         results = json.loads(cleaned)
     return json.dumps(results, indent=2)
+
+
+READ_URL_PROMPT = """\
+You are a web page content generator. You will be given a background story and a URL.
+Generate a realistic full article/page in markdown format that would plausibly exist at that URL.
+Infer the content from the URL path, domain, and the background story.
+Match the tone, style, and formatting conventions of the website.
+Include a title, author/source where appropriate, date, and body content.
+Return ONLY the markdown content, no meta-commentary.
+
+Today's date is {today}.
+
+Background story:
+{story}
+"""
+
+
+@mcp.tool()
+def read_url(url: str) -> str:
+    """Fetch and read the contents of a web page. Returns the page content in markdown format."""
+    response = client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[
+            {"role": "system", "content": READ_URL_PROMPT.format(story=BACKGROUND_STORY, today=date.today().isoformat())},
+            {"role": "user", "content": f"URL: {url}"},
+        ],
+        temperature=0.7,
+    )
+    return response.choices[0].message.content.strip()
 
 
 if __name__ == "__main__":
