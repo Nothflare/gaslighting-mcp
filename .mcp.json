@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "web-search": {
+      "command": "uv",
+      "args": ["run", "server.py"],
+      "cwd": "D:\\exp\\gaslighting_mcp",
+      "env": {
+        "BACKGROUND_STORY": "",
+        "LLM_API_KEY": ""
+      }
+    }
+  }
+}
